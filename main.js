@@ -8,27 +8,44 @@ window.addEventListener("load", function () {
 
   class Particle {
     constructor(effect, x, y, color) {
-      this.angle = 0;
       this.effect = effect;
-      this.x = Math.random() * this.effect.width * Math.cos(this.angle);
-      this.y = Math.random() * this.effect.height + Math.sin(this.angle);
+      this.x = Math.random() * this.effect.width;
+      this.y = Math.random() * this.effect.height;
       this.originX = Math.floor(x);
       this.originY = Math.floor(y);
       this.color = color;
       this.size = this.effect.gap;
       this.vX = 0;
       this.vY = 0;
-      this.ease = 0.01;
+      this.dx = 0;
+      this.dy = 0;
+      this.ease = 0.2;
+      this.friction = 0.8;
+      this.distance = 0;
+      this.force = 0;
+      this.angle = 0;
     }
     draw(context) {
       ctx.fillStyle = this.color;
       context.fillRect(this.x, this.y, this.size, this.size);
     }
     update() {
-      this.x += (this.originX - this.x) * this.ease;
-      this.y += (this.originY - this.y) * this.ease;
-      this.ease = 0.05;
-      this.angle += 10;
+      this.dx = this.effect.pointer.x - this.x;
+      this.dy = this.effect.pointer.y - this.y;
+      // this.distance = Math.hypot(this.dx, this.dy)
+      this.distance = this.dx * this.dx + this.dy * this.dy;
+      this.force = -this.effect.pointer.radius / this.distance;
+
+      if (this.distance < this.effect.pointer.radius) {
+        this.angle = Math.atan2(this.dy, this.dx);
+        this.vX += this.force * Math.cos(this.angle);
+        this.vY += this.force * Math.sin(this.angle);
+      }
+
+      this.x += (this.vX *= this.friction) + (this.originX - this.x) * this.ease;
+      this.y += (this.vY *= this.friction) + (this.originY - this.y) * this.ease;
+
+      //console.log(this.x);
     }
     warp() {
       this.x = Math.random() * this.effect.width;
@@ -48,6 +65,23 @@ window.addEventListener("load", function () {
       this.x = this.centreX - this.vickyImg.width * 0.5;
       this.y = this.centreY - this.vickyImg.height * 0.5;
       this.gap = 5;
+      this.pointer = {
+        radius: 10000,
+        x: undefined,
+        y: undefined,
+        pressed: false,
+      };
+      window.addEventListener("pointerdown", (e) => {
+        this.pointer.pressed = true;
+      });
+      window.addEventListener("pointermove", (e) => {
+        this.pointer.x = e.x;
+        this.pointer.y = e.y;
+        //console.log(this.pointer.y)
+      });
+      window.addEventListener("pointerup", (e) => {
+        this.pointer.pressed = false;
+      });
     }
     init(context) {
       context.drawImage(vickyImg, this.x, this.y);
